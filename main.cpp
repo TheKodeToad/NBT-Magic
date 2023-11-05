@@ -10,6 +10,6 @@ int main() {
         return 1;
 
     auto nbtee = nbt::read_named(file);
-    std::cout << nbt::debug_string(nbtee).toStdString() << '\n';
+    qInfo() << nbtee.name << '\n';
     return 0;
 }

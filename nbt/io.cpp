@@ -1,310 +1,217 @@
 #include "io.hpp"
 
 #include <QDebug>
+#include <QStack>
 
 namespace nbt {
 
-    bool is_gzipped(QIODevice &file) {
-        QByteArray magic = file.peek(2);
-        return magic.length() == 2 && magic.at(0) == '\x1f' && magic.at(1) == '\x8b';
+    constexpr int MAX_DEPTH = 1024;
+    const QString TAG_NAMES[] = {
+            QStringLiteral("TAG_End"),
+            QStringLiteral("TAG_Byte"),
+            QStringLiteral("TAG_Short"),
+            QStringLiteral("TAG_Int"),
+            QStringLiteral("TAG_Long"),
+            QStringLiteral("TAG_Float"),
+            QStringLiteral("TAG_Double"),
+            QStringLiteral("TAG_Byte_Array"),
+            QStringLiteral("TAG_String"),
+            QStringLiteral("TAG_List"),
+            QStringLiteral("TAG_Compound"),
+            QStringLiteral("TAG_Int_Array"),
+            QStringLiteral("TAG_Long_Array")
+    };
+
+    static NamedTag read_named(QIODevice &file, int depth);
+    static Tag read_unnamed(QIODevice &file, int depth);
+    static Tag read_payload(TagType type, QIODevice &file, int depth);
+    static int8_t read_byte(QIODevice &file);
+    static int16_t read_short(QIODevice &file);
+    static int32_t read_int(QIODevice &file);
+    static int64_t read_long(QIODevice &file);
+    static float read_float(QIODevice &file);
+    static double read_double(QIODevice &file);
+    static TagType read_tag_type(QIODevice &file);
+    static QByteArray read_bytes(QIODevice &file, int length);
+    static QString   read_string(QIODevice &file);
+
+    NamedTag read_named(QIODevice &file) {
+        return read_named(file, 0);
     }
 
-    static Tag read_payload(QIODevice &file, TagType type, QString name = {});
-
-    template<typename T>
-    T read_primative(QIODevice &file);
-
-    template<>
-    int8_t read_primative<int8_t>(QIODevice &file) {
-        char byte;
-        file.getChar(&byte);
-        return static_cast<int8_t>(byte);
+    Tag read_unnamed(QIODevice &file) {
+        return read_unnamed(file, 0);
     }
 
-    template<>
-    int16_t read_primative<int16_t>(QIODevice &file) {
-        uint8_t bytes[2];
-        file.read(reinterpret_cast<char*>(bytes), sizeof(bytes));
-        return static_cast<int16_t>((bytes[0] << 8) + (bytes[1] << 0));
-    }
-
-    template<>
-    uint16_t read_primative<uint16_t>(QIODevice &file) {
-        uint8_t bytes[2];
-        file.read(reinterpret_cast<char*>(bytes), sizeof(bytes));
-        return static_cast<uint16_t>((bytes[0] << 8) + (bytes[1] << 0));
-    }
-
-    template<>
-    int32_t read_primative<int32_t>(QIODevice &file) {
-        uint8_t bytes[4];
-        file.read(reinterpret_cast<char*>(bytes), sizeof(bytes));
-        return static_cast<int32_t>((bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + (bytes[3] << 0));
-    }
-
-    template<>
-    int64_t read_primative<int64_t>(QIODevice &file) {
-        uint8_t bytes[8];
-        file.read(reinterpret_cast<char*>(bytes), sizeof(bytes));
-        return static_cast<int64_t>(
-                ((int64_t) bytes[0] << 56) +
-                ((int64_t) (bytes[1] & 255) << 48) +
-                ((int64_t) (bytes[2] & 255) << 40) +
-                ((int64_t) (bytes[3] & 255) << 32) +
-                ((int64_t) (bytes[4] & 255) << 24) +
-                ((bytes[5] & 255) << 16) +
-                ((bytes[6] & 255) << 8) +
-                ((bytes[7] & 255) << 0)
-        );
-    }
-
-    template<>
-    Float read_primative<Float>(QIODevice &file) {
-        static_assert(sizeof(Int) == sizeof(Float));
-
-        auto i = read_primative<Int>(file);
-        Float result;
-        memcpy(&result, &i, sizeof(Int));
-        return result;
-    }
-
-    template<>
-    Double read_primative<Double>(QIODevice &file) {
-        static_assert(sizeof(Long) == sizeof(Double));
-
-        auto i = read_primative<Long>(file);
-        Double result;
-        memcpy(&result, &i, sizeof(Long));
-        return result;
-    }
-
-    static TagType read_tag_type(QIODevice &file) {
-        auto result = read_primative<Byte>(file);
-        if (result < 0 || result >= TAG_ID_COUNT)
-            throw ReadError(QString("Invalid tag ID $1").arg(result));
-
-        return (TagType) result;
-    }
-
-    static String read_string(QIODevice &file) {
-        auto length = read_primative<uint16_t>(file);
-        if (length == 0)
-            return {};
-
-        QByteArray bytes = file.read(length);
-        return QString::fromUtf8(bytes);
-    }
-
-    template<typename type>
-    static Array<type> read_array(QIODevice &file) {
-        auto length = read_primative<int32_t>(file);
-        if (length == 0)
-            return {};
-        if (length < 0)
-            throw ReadError("Length < 0");
-
-        Array<type> result;
-        result.reserve(length);
-        while (length-- != 0)
-            result.append(read_primative<type>(file));
-
-        return result;
-    }
-
-    static QPair<List, TagType> read_list(QIODevice &file) {
-        const auto type = read_tag_type(file);
-        auto length = read_primative<Int>(file);
-        if (length == 0)
-            return {};
-        if (length < 0)
-            throw ReadError("Length < 0");
-
+    static NamedTag read_named(QIODevice &file, int depth) {
+        const TagType type = read_tag_type(file);
         if (type == TAG_End)
-            throw ReadError("List of type End cannot contain any items");
+            return {};
 
-        List result;
-        result.reserve(length);
-        while (length-- != 0)
-            result.append(read_payload(file, type));
-
-        return {result, type};
+        const QString name = read_string(file);
+        return {read_payload(type, file, depth), name};
     }
 
-    static Compound read_compound(QIODevice &file) {
-        Compound result;
-        Tag tag;
-        while (!(tag = read_named(file)).is_end())
-            result[tag.name()] = std::move(tag);
-
-        return result;
+    static Tag read_unnamed(QIODevice &file, int depth) {
+        const TagType type = read_tag_type(file);
+        return read_payload(type, file, depth);
     }
 
-    static Tag read_payload(QIODevice &file, TagType type, QString name) {
+    static Tag read_payload(TagType type, QIODevice &file, int depth) {
         switch (type) {
             case TAG_End:
                 return {};
             case TAG_Byte:
-                return {read_primative<Byte>(file), name};
+                return {read_byte(file)};
             case TAG_Short:
-                return {read_primative<Short>(file), name};
+                return {read_short(file)};
             case TAG_Int:
-                return {read_primative<Int>(file), name};
+                return {read_int(file)};
             case TAG_Long:
-                return {read_primative<Long>(file), name};
+                return {read_long(file)};
             case TAG_Float:
-                return {read_primative<Float>(file), name};
+                return {read_float(file)};
             case TAG_Double:
-                return {read_primative<Double>(file), name};
-            case TAG_Byte_Array:
-                return {read_array<Byte>(file), name};
-            case TAG_String:
-                return {read_string(file), name};
-            case TAG_List: {
-                const auto [list, item_type] = read_list(file);
-                return {list, item_type, name};
-            }
-            case TAG_Compound:
-                return {read_compound(file), name};
-            case TAG_Int_Array:
-                return {read_array<Int>(file), name};
-            case TAG_Long_Array:
-                return {read_array<Long>(file), name};
-        }
-
-        return {};
-    }
-
-    static Tag read_tag(QIODevice &file, bool named) {
-        const auto type = read_tag_type(file);
-        if (type == TAG_End)
-            return {};
-
-        const QString name = named ? read_string(file) : QString();
-        return read_payload(file, type, name);
-    }
-
-    Tag read_named(QIODevice &file) {
-        return read_tag(file, true);
-    }
-
-    Tag read_unnamed(QIODevice &file) {
-        return read_tag(file, false);
-    }
-
-    const QString TAG_NAMES[] = {
-            "TAG_End",
-            "TAG_Byte",
-            "TAG_Short",
-            "TAG_Int",
-            "TAG_Long",
-            "TAG_Float",
-            "TAG_Double",
-            "TAG_Byte_Array",
-            "TAG_String",
-            "TAG_List",
-            "TAG_Compound",
-            "TAG_Int_Array",
-            "TAG_Long_Array"
-    };
-
-    QString debug_string(const Tag &tag) {
-        QString result = TAG_NAMES[tag.type()];
-        if (!tag.name().isNull()) {
-            result.append("(\"");
-            result.append(tag.name());
-            result.append("\")");
-        }
-        result.append(": ");
-
-        switch (tag.type()) {
-            case TAG_End:
-                break;
-            case TAG_Byte:
-                result.append(QString::number(tag.byte_value()));
-                break;
-            case TAG_Short:
-                result.append(QString::number(tag.short_value()));
-                break;
-            case TAG_Int:
-                result.append(QString::number(tag.int_value()));
-                break;
-            case TAG_Long:
-                result.append(QString::number(tag.long_value()));
-                break;
-            case TAG_Float:
-                result.append(QString::number(tag.float_value(), 'g', 16));
-                break;
-            case TAG_Double:
-                result.append(QString::number(tag.double_value(), 'g', 16));
-                break;
+                return {read_double(file)};
             case TAG_Byte_Array: {
-                const ByteArray &value = tag.byte_array_value();
-                result.append(QString::number(value.count()));
-                result.append(" entries\n{\n");
-                for (const Byte &item: value) {
-                    result.append('\t');
-                    result.append(QString::number(item));
-                    result.append('\n');
-                }
-                result.append('}');
-                break;
+                int32_t length = read_int(file);
+                return {read_bytes(file, length)};
             }
-            case TAG_String:
-                result.append(tag.string_value());
-                break;
+            case TAG_String: {
+                uint16_t length = read_short(file);
+                return {QString::fromUtf8(file.read(length))};
+            }
             case TAG_List: {
-                const List &value = tag.list_value();
-                result.append(QString::number(value.count()));
-                result.append(" entries of type ");
-                result.append(TAG_NAMES[tag.content_type()]);
-                result.append("\n{\n");
-                for (const Tag &item: value) {
-                    result.append('\t');
-                    result.append(debug_string(item).replace("\n", "\n\t"));
-                    result.append('\n');
-                }
-                result.append('}');
-                break;
+                TagType item_type = read_tag_type(file);
+                int32_t length = read_int(file);
+
+                Tag result(List(), item_type);
+                result.list_value().reserve(length);
+                while (length-- != 0)
+                    result.list_value().append(read_payload(item_type, file, depth + 1));
+
+                return result;
             }
             case TAG_Compound: {
-                const Compound &value = tag.compound_value();
-                result.append(QString::number(value.count()));
-                result.append(" entries\n{\n");
-                for (const Tag &item: value) {
-                    result.append('\t');
-                    result.append(debug_string(item).replace("\n", "\n\t"));
-                    result.append('\n');
-                }
-                result.append('}');
-                break;
+                Tag result{Compound()};
+
+                NamedTag item;
+                while ((item = read_named(file, depth)).tag.type() != TAG_End)
+                    result.compound_value()[item.name] = item.tag;
+
+                return result;
             }
             case TAG_Int_Array: {
-                const IntArray &value = tag.int_array_value();
-                result.append(QString::number(value.count()));
-                result.append(" entries\n{\n");
-                for (const Int &item: value) {
-                    result.append('\t');
-                    result.append(QString::number(item));
-                    result.append('\n');
-                }
-                result.append('}');
-                break;
+                Tag result{IntArray()};
+
+                int32_t length = read_int(file);
+                result.int_array_value().reserve(length);
+                while (length-- != 0)
+                    result.int_array_value().append(read_int(file));
+
+                return result;
             }
             case TAG_Long_Array: {
-                const LongArray &value = tag.long_array_value();
-                result.append(QString::number(value.count()));
-                result.append(" entries\n{\n");
-                for (const Long &item: value) {
-                    result.append('\t');
-                    result.append(QString::number(item));
-                    result.append('\n');
-                }
-                result.append('}');
-                break;
+                Tag result{LongArray()};
+
+                int32_t length = read_int(file);
+                result.long_array_value().reserve(length);
+                while (length-- != 0)
+                    result.long_array_value().append(read_long(file));
+
+                return result;
             }
         }
 
+        throw ReadError("Unknown tag ID");
+    }
+
+    static int8_t read_byte(QIODevice &file) {
+        char result;
+        if (file.atEnd())
+            throw ReadError("EOF");
+        if (!file.getChar(&result))
+            throw ReadError(file.errorString());
+
+        return static_cast<int8_t>(result);
+    }
+
+    static int16_t read_short(QIODevice &file) {
+        uint8_t bytes[2];
+        if (file.read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
+            throw ReadError("EOF");
+
+        return static_cast<int16_t>(
+                (bytes[0] << 8) +
+                (bytes[1] << 0)
+        );
+    }
+
+    static int32_t read_int(QIODevice &file) {
+        uint8_t bytes[4];
+        if (file.read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
+            throw ReadError("EOF");
+
+        return static_cast<int32_t>(
+                (bytes[0] << 24) +
+                (bytes[1] << 16) +
+                (bytes[2] << 8) +
+                (bytes[3] << 0)
+        );
+    }
+
+    static int64_t read_long(QIODevice &file) {
+        uint8_t bytes[8];
+        if (file.read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
+            throw ReadError("EOF");
+
+        return static_cast<int32_t>(
+                (((int64_t) bytes[0] << 56) +
+                 ((int64_t) (bytes[1] & 255) << 48) +
+                 ((int64_t) (bytes[2] & 255) << 40) +
+                 ((int64_t) (bytes[3] & 255) << 32) +
+                 ((int64_t) (bytes[4] & 255) << 24) +
+                 ((bytes[5] & 255) << 16) +
+                 ((bytes[6] & 255) << 8) +
+                 ((bytes[7] & 255) << 0))
+        );
+    }
+
+    static float read_float(QIODevice &file) {
+        const int32_t src = read_int(file);
+        float dst;
+        static_assert(sizeof(src) == sizeof(dst));
+        memcpy(&dst, &src, sizeof(src));
+        return dst;
+    }
+
+    static double read_double(QIODevice &file) {
+        const int64_t src = read_long(file);
+        double dst;
+        static_assert(sizeof(src) == sizeof(dst));
+        memcpy(&dst, &src, sizeof(src));
+        return dst;
+    }
+
+    static TagType read_tag_type(QIODevice &file) {
+        int8_t id = read_byte(file);
+        if (id < 0 || id >= TAG_ID_COUNT)
+            throw ReadError(QString("Invalid tag ID: %1").arg(id));
+
+        return static_cast<TagType>(id);
+    }
+
+    static QByteArray read_bytes(QIODevice &file, int32_t length) {
+        QByteArray result = file.read(length);
+        if (result.length() != length)
+            throw ReadError("EOF");
+
         return result;
+    }
+
+    static QString read_string(QIODevice &file) {
+        const uint16_t length = read_short(file);
+        return QString::fromUtf8(read_bytes(file, length));
     }
 
 }

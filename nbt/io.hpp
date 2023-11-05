@@ -8,9 +8,8 @@
 
 namespace nbt {
 
-    bool is_gzipped(QIODevice &file);
-    nbt::Tag read_named(QIODevice &file);
-    nbt::Tag read_unnamed(QIODevice &file);
+    NamedTag read_named(QIODevice &file);
+    Tag read_unnamed(QIODevice &file);
     QString debug_string(const nbt::Tag &tag);
 
     class ReadError : public std::exception {

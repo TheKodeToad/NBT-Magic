@@ -19,7 +19,7 @@ namespace nbt {
     using Float = float;
     using Double = double;
     template<typename T> using Array = QList<T>;
-    using ByteArray = Array<Byte>;
+    using ByteArray = QByteArray;
     using String = QString;
     using List = Array<class Tag>;
     using Compound = QMap<QString, class Tag>;
@@ -48,69 +48,35 @@ namespace nbt {
     public:
         Tag() : m_type(TagType::TAG_End) {}
 
-        Tag(Byte value, QString name = {}) : m_type(TagType::TAG_Byte), m_name(std::move(name)), value(value) {}
+        Tag(Byte value) : m_type(TagType::TAG_Byte), value(value) {}
 
-        Tag(Short value, QString name = {}) : m_type(TagType::TAG_Short), m_name(std::move(name)), value(value) {}
+        Tag(Short value) : m_type(TagType::TAG_Short), value(value) {}
 
-        Tag(Int value, QString name = {}) : m_type(TagType::TAG_Int), m_name(std::move(name)), value(value) {}
+        Tag(Int value) : m_type(TagType::TAG_Int), value(value) {}
 
-        Tag(Long value, QString name = {}) : m_type(TagType::TAG_Long), m_name(std::move(name)), value(value) {}
+        Tag(Long value) : m_type(TagType::TAG_Long), value(value) {}
 
-        Tag(Float value, QString name = {}) : m_type(TagType::TAG_Float), m_name(std::move(name)), value(value) {}
+        Tag(Float value) : m_type(TagType::TAG_Float), value(value) {}
 
-        Tag(Double value, QString name = {}) : m_type(TagType::TAG_Double), m_name(std::move(name)), value(value) {}
+        Tag(Double value) : m_type(TagType::TAG_Double), value(value) {}
 
-        Tag(ByteArray value, QString name = {}) : m_type(TagType::TAG_Byte_Array), m_name(std::move(name)),
-                                                  value(std::move(value)) {}
+        Tag(ByteArray value) : m_type(TagType::TAG_Byte_Array),
+                               value(std::move(value)) {}
 
-        Tag(String value, QString name = {}) : m_type(TagType::TAG_String), m_name(std::move(name)),
-                                               value(std::move(value)) {}
+        Tag(String value) : m_type(TagType::TAG_String), value(std::move(value)) {}
 
-        Tag(List value, TagType content_type, QString name = {}) : m_type(TagType::TAG_List),
-                                                                            m_content_type(content_type),
-                                                                            m_name(std::move(name)),
-                                                                            value(std::move(value)) {}
+        Tag(List value, TagType content_type) : m_type(TagType::TAG_List), m_content_type(content_type),
+                                                value(std::move(value)) {}
 
-        Tag(Compound value, QString name = {}) : m_type(TagType::TAG_Compound), m_name(std::move(name)),
-                                                 value(std::move(value)) {}
+        Tag(Compound value) : m_type(TagType::TAG_Compound), value(std::move(value)) {}
 
-        Tag(IntArray value, QString name = {}) : m_type(TagType::TAG_Int_Array), m_name(std::move(name)),
-                                                 value(std::move(value)) {}
+        Tag(IntArray value) : m_type(TagType::TAG_Int_Array), value(std::move(value)) {}
 
-        Tag(LongArray value, QString name = {}) : m_type(TagType::TAG_Long_Array), m_name(std::move(name)),
-                                                  value(std::move(value)) {}
-
-        const QString &name() const { return m_name; }
+        Tag(LongArray value) : m_type(TagType::TAG_Long_Array), value(std::move(value)) {}
 
         TagType type() const { return m_type; }
 
         TagType content_type() const { return m_content_type; }
-
-        bool is_end() const { return m_type == TagType::TAG_End; }
-
-        bool is_byte() const { return m_type == TagType::TAG_Byte; }
-
-        bool is_short() const { return m_type == TagType::TAG_Short; }
-
-        bool is_int() const { return m_type == TagType::TAG_Int; }
-
-        bool is_long() const { return m_type == TagType::TAG_Long; }
-
-        bool is_float() const { return m_type == TagType::TAG_Float; }
-
-        bool is_double() const { return m_type == TagType::TAG_Double; }
-
-        bool is_byte_array() const { return m_type == TagType::TAG_Byte_Array; }
-
-        bool is_string() const { return m_type == TagType::TAG_String; }
-
-        bool is_list() const { return m_type == TagType::TAG_List; }
-
-        bool is_compound() const { return m_type == TagType::TAG_Compound; }
-
-        bool is_int_array() const { return m_type == TagType::TAG_Int_Array; }
-
-        bool is_long_array() const { return m_type == TagType::TAG_Long_Array; }
 
         Byte &byte_value() { return std::get<Byte>(value); }
 
@@ -163,8 +129,12 @@ namespace nbt {
     private:
         TagType m_type = TAG_End;
         TagType m_content_type = TAG_End;
-        QString m_name;
         std::variant<Byte, Short, Int, Long, Float, Double, ByteArray, String, List, Compound, IntArray, LongArray> value;
+    };
+
+    struct NamedTag {
+        Tag tag;
+        QString name;
     };
 
 }
