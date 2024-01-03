@@ -74,57 +74,109 @@ namespace nbt {
 
         Tag(LongArray value) : m_type(TagType::TAG_Long_Array), value(std::move(value)) {}
 
-        TagType type() const { return m_type; }
+        TagType type() const {
+            return m_type;
+        }
 
-        TagType content_type() const { return m_content_type; }
+        TagType content_type() const {
+            return m_content_type;
+        }
 
-        Byte &byte_value() { return std::get<Byte>(value); }
+        Byte &byte_value() {
+            return std::get<Byte>(value);
+        }
 
-        Short &short_value() { return std::get<Short>(value); }
+        Short &short_value() {
+            return std::get<Short>(value);
+        }
 
-        Int &int_value() { return std::get<Int>(value); }
+        Int &int_value() {
+            return std::get<Int>(value);
+        }
 
-        Long &long_value() { return std::get<Long>(value); }
+        Long &long_value() {
+            return std::get<Long>(value);
+        }
 
-        Float &float_value() { return std::get<Float>(value); }
+        Float &float_value() {
+            return std::get<Float>(value);
+        }
 
-        Double &double_value() { return std::get<Double>(value); }
+        Double &double_value() {
+            return std::get<Double>(value);
+        }
 
-        ByteArray &byte_array_value() { return std::get<ByteArray>(value); }
+        ByteArray &byte_array_value() {
+            return std::get<ByteArray>(value);
+        }
 
-        String &string_value() { return std::get<String>(value); }
+        String &string_value() {
+            return std::get<String>(value);
+        }
 
-        List &list_value() { return std::get<List>(value); }
+        List &list_value() {
+            return std::get<List>(value);
+        }
 
-        Compound &compound_value() { return std::get<Compound>(value); }
+        Compound &compound_value() {
+            return std::get<Compound>(value);
+        }
 
-        IntArray &int_array_value() { return std::get<IntArray>(value); }
+        IntArray &int_array_value() {
+            return std::get<IntArray>(value);
+        }
 
-        LongArray &long_array_value() { return std::get<LongArray>(value); }
+        LongArray &long_array_value() {
+            return std::get<LongArray>(value);
+        }
 
-        const Byte &byte_value() const { return std::get<Byte>(value); }
+        const Byte &byte_value() const {
+            return std::get<Byte>(value);
+        }
 
-        const Short &short_value() const { return std::get<Short>(value); }
+        const Short &short_value() const {
+            return std::get<Short>(value);
+        }
 
-        const Int &int_value() const { return std::get<Int>(value); }
+        const Int &int_value() const {
+            return std::get<Int>(value);
+        }
 
-        const Long &long_value() const { return std::get<Long>(value); }
+        const Long &long_value() const {
+            return std::get<Long>(value);
+        }
 
-        const Float &float_value() const { return std::get<Float>(value); }
+        const Float &float_value() const {
+            return std::get<Float>(value);
+        }
 
-        const Double &double_value() const { return std::get<Double>(value); }
+        const Double &double_value() const {
+            return std::get<Double>(value);
+        }
 
-        const ByteArray &byte_array_value() const { return std::get<ByteArray>(value); }
+        const ByteArray &byte_array_value() const {
+            return std::get<ByteArray>(value);
+        }
 
-        const String &string_value() const { return std::get<String>(value); }
+        const String &string_value() const {
+            return std::get<String>(value);
+        }
 
-        const List &list_value() const { return std::get<List>(value); }
+        const List &list_value() const {
+            return std::get<List>(value);
+        }
 
-        const Compound &compound_value() const { return std::get<Compound>(value); }
+        const Compound &compound_value() const {
+            return std::get<Compound>(value);
+        }
 
-        const IntArray &int_array_value() const { return std::get<IntArray>(value); }
+        const IntArray &int_array_value() const {
+            return std::get<IntArray>(value);
+        }
 
-        const LongArray &long_array_value() const { return std::get<LongArray>(value); }
+        const LongArray &long_array_value() const {
+            return std::get<LongArray>(value);
+        }
 
     private:
         TagType m_type = TAG_End;

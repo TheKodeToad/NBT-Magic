@@ -1,8 +1,6 @@
 #include "binary.hpp"
 
-#include <QDebug>
 #include <QStack>
-#include <utility>
 #include <optional>
 
 namespace nbt {
@@ -83,8 +81,7 @@ namespace nbt {
                 return {read_bytes(file, length)};
             }
             case TAG_String: {
-                uint16_t length = read_short(file);
-                return {QString::fromUtf8(file.read(length))};
+                return {read_string(file)};
             }
             case TAG_List: {
                 TagType item_type = read_tag_type(file);
@@ -301,14 +298,14 @@ namespace nbt {
                 write_int(file, value.list_value().length());
 
                 for (const Tag &tag : value.list_value())
-                    write_unnamed(file, tag, depth + 1);
+                    write_payload(file, tag, depth + 1);
                 return;
             }
             case TAG_Compound: {
                 for (auto iter = value.compound_value().cbegin(); iter != value.compound_value().cend(); ++iter)
                     write_named(file, NamedTag{iter.value(), iter.key()}, depth + 1);
 
-                write_unnamed(file, Tag(), depth + 1);
+                write_byte(file, TAG_End);
                 return;
             }
             case TAG_Int_Array: {
@@ -379,12 +376,13 @@ namespace nbt {
     }
 
     void write_string(QIODevice &file, const QString &value) {
-        const auto length = numeric_cast<int16_t>(value.length());
+        QByteArray bytes = value.toUtf8();
+        const auto length = numeric_cast<int16_t>(bytes.length());
         if (!length.has_value())
             throw IOError("String too long");
 
         write_short(file, length.value());
-        write_bytes(file, value.toUtf8());
+        write_bytes(file, bytes);
     }
 
     void write_bytes(QIODevice &file, const QByteArray &value) {
