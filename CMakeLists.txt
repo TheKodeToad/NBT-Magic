@@ -12,8 +12,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 add_executable(${PROJECT_NAME}
         main.cpp
-        nbt/io.hpp
-        nbt/io.cpp
+        nbt/binary.hpp
+        nbt/binary.cpp
         nbt/tag.hpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 add_compile_options(-fno-inline-functions -O0)
