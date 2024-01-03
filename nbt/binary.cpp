@@ -1,3 +1,27 @@
+/**
+ * This project is licensed under the MIT license:
+ *
+ * Copyright (c) 2023-2024 TheKodeToad and project contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include "binary.hpp"
 
 #include <QStack>
@@ -6,21 +30,6 @@
 namespace nbt {
 
     constexpr int MAX_DEPTH = 1024;
-    const QString TAG_NAMES[] = {
-            QStringLiteral("TAG_End"),
-            QStringLiteral("TAG_Byte"),
-            QStringLiteral("TAG_Short"),
-            QStringLiteral("TAG_Int"),
-            QStringLiteral("TAG_Long"),
-            QStringLiteral("TAG_Float"),
-            QStringLiteral("TAG_Double"),
-            QStringLiteral("TAG_Byte_Array"),
-            QStringLiteral("TAG_String"),
-            QStringLiteral("TAG_List"),
-            QStringLiteral("TAG_Compound"),
-            QStringLiteral("TAG_Int_Array"),
-            QStringLiteral("TAG_Long_Array")
-    };
 
     static NamedTag read_named(QIODevice &file, int depth);
     static Tag read_unnamed(QIODevice &file, int depth);
