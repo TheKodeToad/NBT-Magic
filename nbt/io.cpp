@@ -1,4 +1,4 @@
-/**
+/*
  * This project is licensed under the MIT license:
  *
  * Copyright (c) 2023-2024 TheKodeToad and project contributors
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "binary.hpp"
+#include "io.hpp"
 
 #include <QStack>
 #include <optional>
@@ -31,28 +31,28 @@ namespace nbt {
 
     constexpr int MAX_DEPTH = 1024;
 
-    static NamedTag read_named(QIODevice &file, int depth);
-    static Tag read_unnamed(QIODevice &file, int depth);
-    static Tag read_payload(QIODevice &file, TagType type, int depth);
-    static int8_t read_byte(QIODevice &file);
-    static int16_t read_short(QIODevice &file);
-    static int32_t read_int(QIODevice &file);
-    static int64_t read_long(QIODevice &file);
-    static float read_float(QIODevice &file);
-    static double read_double(QIODevice &file);
-    static TagType read_tag_type(QIODevice &file);
-    static QByteArray read_bytes(QIODevice &file, int length);
-    static QString read_string(QIODevice &file);
+    static NamedTag read_named(QIODevice *file, int depth);
+    static Tag read_unnamed(QIODevice *file, int depth);
+    static Tag read_payload(QIODevice *file, TagType type, int depth);
+    static int8_t read_byte(QIODevice *file);
+    static int16_t read_short(QIODevice *file);
+    static int32_t read_int(QIODevice *file);
+    static int64_t read_long(QIODevice *file);
+    static float read_float(QIODevice *file);
+    static double read_double(QIODevice *file);
+    static TagType read_tag_type(QIODevice *file);
+    static QByteArray read_bytes(QIODevice *file, int length);
+    static QString read_string(QIODevice *file);
 
-    NamedTag read_named_binary(QIODevice &file) {
+    NamedTag read_named_binary(QIODevice *file) {
         return read_named(file, 0);
     }
 
-    Tag read_unnamed_binary(QIODevice &file) {
+    Tag read_unnamed_binary(QIODevice *file) {
         return read_unnamed(file, 0);
     }
 
-    static NamedTag read_named(QIODevice &file, int depth) {
+    static NamedTag read_named(QIODevice *file, int depth) {
         const TagType type = read_tag_type(file);
         if (type == TAG_End)
             return {};
@@ -61,12 +61,12 @@ namespace nbt {
         return {read_payload(file, type, depth), name};
     }
 
-    static Tag read_unnamed(QIODevice &file, int depth) {
+    static Tag read_unnamed(QIODevice *file, int depth) {
         const TagType type = read_tag_type(file);
         return read_payload(file, type, depth);
     }
 
-    static Tag read_payload(QIODevice &file, TagType type, int depth) {
+    static Tag read_payload(QIODevice *file, TagType type, int depth) {
         if (depth > MAX_DEPTH)
             throw IOError("Max depth reached");
 
@@ -137,19 +137,19 @@ namespace nbt {
         throw IOError("Unknown tag ID");
     }
 
-    static int8_t read_byte(QIODevice &file) {
+    static int8_t read_byte(QIODevice *file) {
         char result;
-        if (file.atEnd())
+        if (file->atEnd())
             throw IOError("EOF");
-        if (!file.getChar(&result))
-            throw IOError(file.errorString());
+        if (!file->getChar(&result))
+            throw IOError(file->errorString());
 
         return static_cast<int8_t>(result);
     }
 
-    static int16_t read_short(QIODevice &file) {
+    static int16_t read_short(QIODevice *file) {
         uint8_t bytes[2];
-        if (file.read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
+        if (file->read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
             throw IOError("EOF");
 
         return static_cast<int16_t>(
@@ -158,9 +158,9 @@ namespace nbt {
         );
     }
 
-    static int32_t read_int(QIODevice &file) {
+    static int32_t read_int(QIODevice *file) {
         uint8_t bytes[4];
-        if (file.read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
+        if (file->read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
             throw IOError("EOF");
 
         return static_cast<int32_t>(
@@ -171,9 +171,9 @@ namespace nbt {
         );
     }
 
-    static int64_t read_long(QIODevice &file) {
+    static int64_t read_long(QIODevice *file) {
         uint8_t bytes[8];
-        if (file.read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
+        if (file->read(reinterpret_cast<char *>(bytes), sizeof(bytes)) != sizeof(bytes))
             throw IOError("EOF");
 
         return static_cast<int32_t>(
@@ -188,7 +188,7 @@ namespace nbt {
         );
     }
 
-    static float read_float(QIODevice &file) {
+    static float read_float(QIODevice *file) {
         const int32_t src = read_int(file);
         float dst;
         static_assert(sizeof(src) == sizeof(dst));
@@ -196,7 +196,7 @@ namespace nbt {
         return dst;
     }
 
-    static double read_double(QIODevice &file) {
+    static double read_double(QIODevice *file) {
         const int64_t src = read_long(file);
         double dst;
         static_assert(sizeof(src) == sizeof(dst));
@@ -204,7 +204,7 @@ namespace nbt {
         return dst;
     }
 
-    static TagType read_tag_type(QIODevice &file) {
+    static TagType read_tag_type(QIODevice *file) {
         int8_t id = read_byte(file);
         if (id < 0 || id >= TAG_ID_COUNT)
             throw IOError(QString("Invalid tag ID: %1").arg(id));
@@ -212,36 +212,36 @@ namespace nbt {
         return static_cast<TagType>(id);
     }
 
-    static QByteArray read_bytes(QIODevice &file, int32_t length) {
-        QByteArray result = file.read(length);
+    static QByteArray read_bytes(QIODevice *file, int32_t length) {
+        QByteArray result = file->read(length);
         if (result.length() != length)
             throw IOError("EOF");
 
         return result;
     }
 
-    static QString read_string(QIODevice &file) {
+    static QString read_string(QIODevice *file) {
         const uint16_t length = read_short(file);
         return QString::fromUtf8(read_bytes(file, length));
     }
 
-    static void write_named(QIODevice &file, const NamedTag &value, int depth);
-    static void write_unnamed(QIODevice &file, const Tag &value, int depth);
-    static void write_payload(QIODevice &file, const Tag &value, int depth);
-    static void write_byte(QIODevice &file, int8_t value);
-    static void write_short(QIODevice &file, int16_t value);
-    static void write_int(QIODevice &file, int32_t value);
-    static void write_long(QIODevice &file, int64_t value);
-    static void write_float(QIODevice &file, float value);
-    static void write_double(QIODevice &file, double value);
-    static void write_string(QIODevice &file, const QString &value);
-    static void write_bytes(QIODevice &file, const QByteArray &value);
+    static void write_named(QIODevice *file, const NamedTag &value, int depth);
+    static void write_unnamed(QIODevice *file, const Tag &value, int depth);
+    static void write_payload(QIODevice *file, const Tag &value, int depth);
+    static void write_byte(QIODevice *file, int8_t value);
+    static void write_short(QIODevice *file, int16_t value);
+    static void write_int(QIODevice *file, int32_t value);
+    static void write_long(QIODevice *file, int64_t value);
+    static void write_float(QIODevice *file, float value);
+    static void write_double(QIODevice *file, double value);
+    static void write_string(QIODevice *file, const QString &value);
+    static void write_bytes(QIODevice *file, const QByteArray &value);
 
-    void write_named_binary(QIODevice &file, const NamedTag &tag) {
+    void write_named_binary(QIODevice *file, const NamedTag &tag) {
         write_named(file, tag, 0);
     }
 
-    void write_unnamed_binary(QIODevice &file, const Tag &tag) {
+    void write_unnamed_binary(QIODevice *file, const Tag &tag) {
         write_unnamed(file, tag, 0);
     }
 
@@ -258,7 +258,7 @@ namespace nbt {
         return static_cast<To>(value);
     }
 
-    void write_named(QIODevice &file, const NamedTag &value, int depth) {
+    void write_named(QIODevice *file, const NamedTag &value, int depth) {
         const auto &[tag, name] = value;
         write_byte(file, tag.type());
         if (tag.type() == TAG_End)
@@ -268,12 +268,12 @@ namespace nbt {
         write_payload(file, tag, depth);
     }
 
-    void write_unnamed(QIODevice &file, const Tag &value, int depth) {
+    void write_unnamed(QIODevice *file, const Tag &value, int depth) {
         write_byte(file, value.type());
         write_payload(file, value, depth);
     }
 
-    void write_payload(QIODevice &file, const Tag &value, int depth) {
+    void write_payload(QIODevice *file, const Tag &value, int depth) {
         switch (value.type()) {
             case TAG_End:
                 return;
@@ -336,28 +336,28 @@ namespace nbt {
         throw IOError("Unknown tag ID");
     }
 
-    void write_byte(QIODevice &file, int8_t value) {
-        if (!file.putChar(value))
-            throw IOError(file.errorString());
+    void write_byte(QIODevice *file, int8_t value) {
+        if (!file->putChar(value))
+            throw IOError(file->errorString());
     }
 
-    void write_short(QIODevice &file, int16_t value) {
+    void write_short(QIODevice *file, int16_t value) {
         QByteArray result(2, Qt::Uninitialized);
         result[0] = static_cast<char>(value >> 8);
         result[1] = static_cast<char>(value);
-        file.write(result);
+        file->write(result);
     }
 
-    void write_int(QIODevice &file, int32_t value) {
+    void write_int(QIODevice *file, int32_t value) {
         QByteArray result(4, Qt::Uninitialized);
         result[0] = static_cast<char>(value >> 24);
         result[1] = static_cast<char>(value >> 16);
         result[2] = static_cast<char>(value >> 8);
         result[3] = static_cast<char>(value);
-        file.write(result);
+        file->write(result);
     }
 
-    void write_long(QIODevice &file, int64_t value) {
+    void write_long(QIODevice *file, int64_t value) {
         QByteArray result(8, Qt::Uninitialized);
         result[0] = static_cast<char>(value >> 56);
         result[1] = static_cast<char>(value >> 48);
@@ -367,24 +367,24 @@ namespace nbt {
         result[5] = static_cast<char>(value >> 16);
         result[6] = static_cast<char>(value >> 8);
         result[7] = static_cast<char>(value);
-        file.write(result);
+        file->write(result);
     }
 
-    void write_float(QIODevice &file, float value) {
+    void write_float(QIODevice *file, float value) {
         int32_t result;
         static_assert(sizeof(value) == sizeof(result));
         memcpy(&result, &value, sizeof(value));
         write_int(file, result);
     }
 
-    void write_double(QIODevice &file, double value) {
+    void write_double(QIODevice *file, double value) {
         int64_t result;
         static_assert(sizeof(value) == sizeof(result));
         memcpy(&result, &value, sizeof(value));
         write_long(file, result);
     }
 
-    void write_string(QIODevice &file, const QString &value) {
+    void write_string(QIODevice *file, const QString &value) {
         QByteArray bytes = value.toUtf8();
         const auto length = numeric_cast<int16_t>(bytes.length());
         if (!length.has_value())
@@ -394,9 +394,9 @@ namespace nbt {
         write_bytes(file, bytes);
     }
 
-    void write_bytes(QIODevice &file, const QByteArray &value) {
-        if (file.write(value) != value.length())
-            throw IOError(file.errorString());
+    void write_bytes(QIODevice *file, const QByteArray &value) {
+        if (file->write(value) != value.length())
+            throw IOError(file->errorString());
     }
 
 }

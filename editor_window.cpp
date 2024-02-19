@@ -22,14 +22,14 @@
  * SOFTWARE.
  */
 
-#include <QApplication>
+#include <QVBoxLayout>
+#include <QFile>
 #include "editor_window.hpp"
+#include "info.hpp"
+#include "tag_model.hpp"
+#include "nbt/io.hpp"
 
-int main(int argc, char **argv) {
-    QApplication application(argc, argv);
-
-    EditorWindow window;
-    window.show();
-
-    return QApplication::exec();
+EditorWindow::EditorWindow() {
+    setWindowTitle(QString("%1 v%2").arg(info::NAME, info::VERSION));
+    setCentralWidget(&tab_widget);
 }

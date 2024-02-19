@@ -22,14 +22,32 @@
  * SOFTWARE.
  */
 
-#include <QApplication>
-#include "editor_window.hpp"
+#pragma once
 
-int main(int argc, char **argv) {
-    QApplication application(argc, argv);
+#include <QVariant>
+#include <QIODevice>
+#include <utility>
+#include <iostream>
+#include "tag.hpp"
 
-    EditorWindow window;
-    window.show();
+namespace nbt {
 
-    return QApplication::exec();
+    NamedTag read_named_binary(QIODevice *file);
+    Tag read_unnamed_binary(QIODevice *file);
+
+    void write_named_binary(QIODevice *file, const NamedTag &tag);
+    void write_unnamed_binary(QIODevice *file, const Tag &tag);
+
+    class IOError : public std::exception {
+    public:
+        IOError() = default;
+        explicit IOError(const QString& message) : message(message.toLocal8Bit().toStdString()) {}
+
+        const char* what() const noexcept override { return message.c_str(); }
+
+    private:
+        // used simply for ownership
+        std::string message;
+    };
+
 }

@@ -1,0 +1,8 @@
+#pragma once
+
+#include <QString>
+
+namespace info {
+    QString NAME("@nbtmagic_NAME@");
+    QString VERSION("@nbtmagic_VERSION@");
+}

@@ -1,4 +1,4 @@
-/**
+/*
  * This project is licensed under the MIT license:
  *
  * Copyright (c) 2023-2024 TheKodeToad and project contributors
