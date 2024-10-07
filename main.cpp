@@ -22,8 +22,10 @@
  * SOFTWARE.
  */
 
-#include <QApplication>
 #include "editor_window.hpp"
+#include <QApplication>
+#include <QFile>
+#include <nbt/io.hpp>
 
 int main(int argc, char **argv) {
     QApplication application(argc, argv);

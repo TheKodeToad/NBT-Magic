@@ -25,11 +25,12 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QTreeView>
 
 class EditorWindow : public QMainWindow {
 public:
-    EditorWindow();
+	EditorWindow();
 
 private:
-    QTabWidget tab_widget;
+	QTreeView view_widget;
 };

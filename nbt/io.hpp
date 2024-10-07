@@ -10,8 +10,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -24,30 +24,32 @@
 
 #pragma once
 
-#include <QVariant>
-#include <QIODevice>
-#include <utility>
-#include <iostream>
 #include "tag.hpp"
+#include <QIODevice>
+#include <QVariant>
+#include <iostream>
+#include <utility>
 
 namespace nbt {
 
-    NamedTag read_named_binary(QIODevice *file);
-    Tag read_unnamed_binary(QIODevice *file);
+	NamedTag read_named_binary(QIODevice *file);
+	Tag read_unnamed_binary(QIODevice *file);
 
-    void write_named_binary(QIODevice *file, const NamedTag &tag);
-    void write_unnamed_binary(QIODevice *file, const Tag &tag);
+	void write_named_binary(QIODevice *file, const NamedTag &tag);
+	void write_unnamed_binary(QIODevice *file, const Tag &tag);
 
-    class IOError : public std::exception {
-    public:
-        IOError() = default;
-        explicit IOError(const QString& message) : message(message.toLocal8Bit().toStdString()) {}
+	class IOError : public std::exception {
+	public:
+		IOError() = default;
+		explicit IOError(const QString &message) : message(std::move(message.toUtf8())) {}
 
-        const char* what() const noexcept override { return message.c_str(); }
+		const char *what() const noexcept override {
+			return message.constData();
+		}
 
-    private:
-        // used simply for ownership
-        std::string message;
-    };
+	private:
+		// used simply for ownership
+		const QByteArray message;
+	};
 
 }

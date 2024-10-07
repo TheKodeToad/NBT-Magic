@@ -22,14 +22,17 @@
  * SOFTWARE.
  */
 
-#include <QVBoxLayout>
-#include <QFile>
 #include "editor_window.hpp"
 #include "info.hpp"
-#include "tag_model.hpp"
 #include "nbt/io.hpp"
+#include "tag_model.hpp"
+#include <QFile>
+#include <QVBoxLayout>
 
 EditorWindow::EditorWindow() {
-    setWindowTitle(QString("%1 v%2").arg(info::NAME, info::VERSION));
-    setCentralWidget(&tab_widget);
+	setWindowTitle(QString("%1 v%2").arg(info::NAME, info::VERSION));
+	setCentralWidget(&view_widget);
+	QFile file("bigtest.nbt");
+	file.open(QFile::ReadOnly);
+	view_widget.setModel(new TagModel(std::make_shared<nbt::NamedTag>(nbt::read_named_binary(&file)), this));
 }

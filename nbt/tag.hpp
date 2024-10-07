@@ -24,193 +24,192 @@
 
 #pragma once
 
-#include <cstdint>
-#include <memory>
-#include <QString>
 #include <QList>
 #include <QMap>
+#include <QString>
 #include <QVariant>
+#include <cstdint>
+#include <memory>
 
 // Very ugly definitions for NBT tags
 // Even though this is not machine generated you might as well consider it as such if it makes you feel better :)
 
 namespace nbt {
 
-    using Byte = int8_t;
-    using Short = int16_t;
-    using Int = int32_t;
-    using Long = int64_t;
-    using Float = float;
-    using Double = double;
-    template<typename T> using Array = QList<T>;
-    using ByteArray = QByteArray;
-    using String = QString;
-    using List = Array<class Tag>;
-    using Compound = QMap<QString, class Tag>;
-    using IntArray = Array<Int>;
-    using LongArray = Array<Long>;
+	using Byte = int8_t;
+	using Short = int16_t;
+	using Int = int32_t;
+	using Long = int64_t;
+	using Float = float;
+	using Double = double;
+	using String = QString;
+	using List = QList<class Tag>;
+	using Compound = QList<class NamedTag>;
 
-    enum TagType : Byte {
-        TAG_End = 0,
-        TAG_Byte = 1,
-        TAG_Short = 2,
-        TAG_Int = 3,
-        TAG_Long = 4,
-        TAG_Float = 5,
-        TAG_Double = 6,
-        TAG_Byte_Array = 7,
-        TAG_String = 8,
-        TAG_List = 9,
-        TAG_Compound = 10,
-        TAG_Int_Array = 11,
-        TAG_Long_Array = 12
-    };
+	enum class TagType : Byte {
+		END = 0,
+		BYTE = 1,
+		SHORT = 2,
+		INT = 3,
+		LONG = 4,
+		FLOAT = 5,
+		DOUBLE = 6,
+		BYTE_ARRAY = 7,
+		STRING = 8,
+		LIST = 9,
+		COMPOUND = 10,
+		INT_ARRAY = 11,
+		LONG_ARRAY = 12
+	};
 
-    constexpr Byte TAG_ID_COUNT = TAG_Long_Array + 1;
+	constexpr Byte TAG_ID_COUNT = static_cast<Byte>(TagType::LONG_ARRAY) + 1;
 
-    class Tag {
-    public:
-        Tag() : m_type(TagType::TAG_End) {}
+	class Tag {
+	public:
+		static Tag of_byte(Byte value = 0) {
+			return {TagType::BYTE, value};
+		}
 
-        Tag(Byte value) : m_type(TagType::TAG_Byte), value(value) {}
+		static Tag of_short(Short value = 0) {
+			return {TagType::SHORT, value};
+		}
 
-        Tag(Short value) : m_type(TagType::TAG_Short), value(value) {}
+		static Tag of_int(Int value = 0) {
+			return {TagType::INT, value};
+		}
 
-        Tag(Int value) : m_type(TagType::TAG_Int), value(value) {}
+		static Tag of_long(Long value = 0) {
+			return {TagType::LONG, value};
+		}
 
-        Tag(Long value) : m_type(TagType::TAG_Long), value(value) {}
+		static Tag of_float(Float value = 0) {
+			return {TagType::FLOAT, value};
+		}
 
-        Tag(Float value) : m_type(TagType::TAG_Float), value(value) {}
+		static Tag of_double(Double value = 0) {
+			return {TagType::DOUBLE, value};
+		}
 
-        Tag(Double value) : m_type(TagType::TAG_Double), value(value) {}
+		static Tag of_byte_array(List value = {}) {
+			return {TagType::BYTE_ARRAY, std::move(value)};
+		}
 
-        Tag(ByteArray value) : m_type(TagType::TAG_Byte_Array),
-                               value(std::move(value)) {}
+		static Tag of_string(String value = "") {
+			return {TagType::STRING, std::move(value)};
+		}
 
-        Tag(String value) : m_type(TagType::TAG_String), value(std::move(value)) {}
+		static Tag of_list(TagType content_type, List value = {}) {
+			return {TagType::LIST, content_type, std::move(value)};
+		}
 
-        Tag(List value, TagType content_type) : m_type(TagType::TAG_List), m_content_type(content_type),
-                                                value(std::move(value)) {}
+		static Tag of_compound(Compound value = {}) {
+			return {TagType::COMPOUND, std::move(value)};
+		}
 
-        Tag(Compound value) : m_type(TagType::TAG_Compound), value(std::move(value)) {}
+		static Tag of_int_array(List value = {}) {
+			return {TagType::INT_ARRAY, std::move(value)};
+		}
 
-        Tag(IntArray value) : m_type(TagType::TAG_Int_Array), value(std::move(value)) {}
+		static Tag of_long_array(List value = {}) {
+			return {TagType::LONG_ARRAY, std::move(value)};
+		}
 
-        Tag(LongArray value) : m_type(TagType::TAG_Long_Array), value(std::move(value)) {}
+		Tag() = default;
 
-        TagType type() const {
-            return m_type;
-        }
+		TagType type() const {
+			return m_type;
+		}
 
-        TagType content_type() const {
-            return m_content_type;
-        }
+		TagType content_type() const {
+			return m_content_type;
+		}
 
-        Byte &byte_value() {
-            return std::get<Byte>(value);
-        }
+		Byte &byte_value() {
+			return std::get<Byte>(value);
+		}
 
-        Short &short_value() {
-            return std::get<Short>(value);
-        }
+		Short &short_value() {
+			return std::get<Short>(value);
+		}
 
-        Int &int_value() {
-            return std::get<Int>(value);
-        }
+		Int &int_value() {
+			return std::get<Int>(value);
+		}
 
-        Long &long_value() {
-            return std::get<Long>(value);
-        }
+		Long &long_value() {
+			return std::get<Long>(value);
+		}
 
-        Float &float_value() {
-            return std::get<Float>(value);
-        }
+		Float &float_value() {
+			return std::get<Float>(value);
+		}
 
-        Double &double_value() {
-            return std::get<Double>(value);
-        }
+		Double &double_value() {
+			return std::get<Double>(value);
+		}
 
-        ByteArray &byte_array_value() {
-            return std::get<ByteArray>(value);
-        }
+		String &string_value() {
+			return std::get<String>(value);
+		}
 
-        String &string_value() {
-            return std::get<String>(value);
-        }
+		List &list_value() {
+			return std::get<List>(value);
+		}
 
-        List &list_value() {
-            return std::get<List>(value);
-        }
+		Compound &compound_value() {
+			return std::get<Compound>(value);
+		}
 
-        Compound &compound_value() {
-            return std::get<Compound>(value);
-        }
+		const Byte &byte_value() const {
+			return std::get<Byte>(value);
+		}
 
-        IntArray &int_array_value() {
-            return std::get<IntArray>(value);
-        }
+		const Short &short_value() const {
+			return std::get<Short>(value);
+		}
 
-        LongArray &long_array_value() {
-            return std::get<LongArray>(value);
-        }
+		const Int &int_value() const {
+			return std::get<Int>(value);
+		}
 
-        const Byte &byte_value() const {
-            return std::get<Byte>(value);
-        }
+		const Long &long_value() const {
+			return std::get<Long>(value);
+		}
 
-        const Short &short_value() const {
-            return std::get<Short>(value);
-        }
+		const Float &float_value() const {
+			return std::get<Float>(value);
+		}
 
-        const Int &int_value() const {
-            return std::get<Int>(value);
-        }
+		const Double &double_value() const {
+			return std::get<Double>(value);
+		}
 
-        const Long &long_value() const {
-            return std::get<Long>(value);
-        }
+		const String &string_value() const {
+			return std::get<String>(value);
+		}
 
-        const Float &float_value() const {
-            return std::get<Float>(value);
-        }
+		const List &list_value() const {
+			return std::get<List>(value);
+		}
 
-        const Double &double_value() const {
-            return std::get<Double>(value);
-        }
+		const Compound &compound_value() const {
+			return std::get<Compound>(value);
+		}
 
-        const ByteArray &byte_array_value() const {
-            return std::get<ByteArray>(value);
-        }
+	private:
+		TagType m_type = TagType::END;
+		TagType m_content_type = TagType::END;
+		std::variant<std::monostate, Byte, Short, Int, Long, Float, Double, String, List, Compound> value;
 
-        const String &string_value() const {
-            return std::get<String>(value);
-        }
+		Tag(TagType type, decltype(value) value) : m_type(type), value(std::move(value)) {}
 
-        const List &list_value() const {
-            return std::get<List>(value);
-        }
+		Tag(TagType type, TagType content_type, decltype(value) value)
+			: m_type(type), m_content_type(content_type), value(std::move(value)) {}
+	};
 
-        const Compound &compound_value() const {
-            return std::get<Compound>(value);
-        }
-
-        const IntArray &int_array_value() const {
-            return std::get<IntArray>(value);
-        }
-
-        const LongArray &long_array_value() const {
-            return std::get<LongArray>(value);
-        }
-
-    private:
-        TagType m_type = TAG_End;
-        TagType m_content_type = TAG_End;
-        std::variant<Byte, Short, Int, Long, Float, Double, ByteArray, String, List, Compound, IntArray, LongArray> value;
-    };
-
-    struct NamedTag {
-        Tag tag;
-        QString name;
-    };
+	struct NamedTag {
+		Tag tag;
+		QString name;
+	};
 
 }

@@ -3,6 +3,6 @@
 #include <QString>
 
 namespace info {
-    QString NAME("@nbtmagic_NAME@");
-    QString VERSION("@nbtmagic_VERSION@");
+    QString NAME("@nbt-magic_NAME@");
+    QString VERSION("@nbt-magic_VERSION@");
 }
